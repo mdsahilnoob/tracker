@@ -26,3 +26,5 @@ eas build --platform android --profile production
 Before publishing, replace the placeholder Android package ID `com.yourname.focusflow` in `app.json`, replace the starter icon/splash artwork, create or link the EAS project, and verify Play Store listing details and signing credentials.
 
 The app uses versioned AsyncStorage keys under `focusflow:v1:*`. The timer source of truth is persisted timestamps (`startedAt`, `expectedEndAt`, pause metadata); the one-second interval only refreshes the display.
+
+Notifications are temporarily disabled so the app runs cleanly in Expo Go on Android. Re-enable them in a development build when notification support is needed.

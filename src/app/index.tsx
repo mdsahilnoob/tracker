@@ -13,7 +13,6 @@ import { getTodayStats } from '@/lib/analytics';
 import { formatCountdown, formatDuration } from '@/lib/dates';
 import { shouldCelebrateGoal } from '@/lib/goals';
 import { triggerHaptic } from '@/services/haptics';
-import { cancelFocusCompletion, scheduleFocusCompletion } from '@/services/notifications';
 import { useFocusStore } from '@/stores/use-focus-store';
 import { useSettingsStore } from '@/stores/use-settings-store';
 import { useTasksStore } from '@/stores/use-tasks-store';
@@ -50,7 +49,6 @@ export default function FocusScreen() {
     completionInFlight.current = true;
     completeTimer().then((completed) => {
       if (completed) {
-        void cancelFocusCompletion();
         void triggerHaptic(settings.hapticsEnabled, 'success');
         Alert.alert('Session complete', 'Great work. Your focus session was saved locally.');
       }
@@ -83,24 +81,19 @@ export default function FocusScreen() {
     const timer = await startTimer({ plannedDurationMinutes: displayDuration, taskId: selectedTask?.id, taskTitle: selectedTask?.title });
     if (!timer) return;
     void triggerHaptic(settings.hapticsEnabled, 'medium');
-    void scheduleFocusCompletion(timer, settings.soundEnabled, settings.notificationsEnabled);
   }
 
   async function pause() {
-    await cancelFocusCompletion();
     await pauseTimer();
     await triggerHaptic(settings.hapticsEnabled, 'light');
   }
 
   async function resume() {
-    await cancelFocusCompletion();
-    const resumed = await resumeTimer();
-    if (resumed) await scheduleFocusCompletion(resumed, settings.soundEnabled, settings.notificationsEnabled);
+    await resumeTimer();
     await triggerHaptic(settings.hapticsEnabled, 'light');
   }
 
   async function finish(recordInterrupted: boolean) {
-    await cancelFocusCompletion();
     await finishTimer(recordInterrupted);
   }
 

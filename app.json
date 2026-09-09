@@ -13,7 +13,6 @@
     "android": {
       "package": "com.yourname.focusflow",
       "versionCode": 1,
-      "permissions": ["SCHEDULE_EXACT_ALARM"],
       "adaptiveIcon": {
         "backgroundColor": "#171615",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -34,14 +33,6 @@
           "backgroundColor": "#171615",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/android-icon-monochrome.png",
-          "color": "#FF7657",
-          "defaultChannel": "focus-complete"
         }
       ]
     ],

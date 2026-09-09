@@ -4,7 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 
 import AppTabs from '@/components/app-tabs';
-import { cancelFocusCompletion, configureNotifications } from '@/services/notifications';
 import { useFocusStore } from '@/stores/use-focus-store';
 import { useSettingsStore } from '@/stores/use-settings-store';
 import { useTasksStore } from '@/stores/use-tasks-store';
@@ -21,21 +20,25 @@ export default function RootLayout() {
 
   useEffect(() => {
     let mounted = true;
+    const fallbackTimer = setTimeout(() => {
+      if (mounted) setReady(true);
+    }, 3000);
+
     async function bootstrap() {
-      await Promise.all([hydrateFocus(), hydrateTasks(), hydrateSettings(), configureNotifications()]);
-      const activeTimer = useFocusStore.getState().activeTimer;
-      if (!activeTimer || activeTimer.status !== 'running') await cancelFocusCompletion();
-      if (!mounted) return;
-      setReady(true);
-      SplashScreen.hideAsync().catch(() => undefined);
+      await Promise.allSettled([hydrateFocus(), hydrateTasks(), hydrateSettings()]);
+      clearTimeout(fallbackTimer);
+      if (mounted) setReady(true);
     }
-    bootstrap().catch(() => {
-      if (!mounted) return;
-      setReady(true);
-      SplashScreen.hideAsync().catch(() => undefined);
-    });
-    return () => { mounted = false; };
+    void bootstrap();
+    return () => {
+      mounted = false;
+      clearTimeout(fallbackTimer);
+    };
   }, [hydrateFocus, hydrateTasks, hydrateSettings]);
+
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => undefined);
+  }, [ready]);
 
   if (!ready) return null;
   return (
