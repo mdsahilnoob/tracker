@@ -33,6 +33,11 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Deployment credentials
+google-service-account*.json
+service-account*.json
+credentials.json
+
 # typescript
 *.tsbuildinfo
 
