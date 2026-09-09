@@ -21,8 +21,16 @@ function isActiveTimer(value: unknown): value is ActiveTimerState {
     typeof timer.sessionId === 'string' &&
     typeof timer.startedAt === 'string' &&
     typeof timer.expectedEndAt === 'string' &&
+    Number.isFinite(Date.parse(timer.startedAt)) &&
+    Number.isFinite(Date.parse(timer.expectedEndAt)) &&
     typeof timer.plannedDurationMinutes === 'number' &&
+    Number.isFinite(timer.plannedDurationMinutes) &&
+    timer.plannedDurationMinutes >= 1 &&
+    timer.plannedDurationMinutes <= 180 &&
     typeof timer.accumulatedPausedMilliseconds === 'number' &&
+    Number.isFinite(timer.accumulatedPausedMilliseconds) &&
+    timer.accumulatedPausedMilliseconds >= 0 &&
+    (!timer.pausedAt || Number.isFinite(Date.parse(timer.pausedAt))) &&
     (timer.status === 'running' || timer.status === 'paused')
   );
 }

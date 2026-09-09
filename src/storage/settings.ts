@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
 };
 
 const validThemes: ThemeMode[] = ['system', 'light', 'dark'];
+const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
 export async function loadSettings(): Promise<UserSettings> {
   const value = await readJson<unknown>(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
@@ -26,7 +27,9 @@ export async function loadSettings(): Promise<UserSettings> {
     soundEnabled: settings.soundEnabled !== false,
     hapticsEnabled: settings.hapticsEnabled !== false,
     notificationsEnabled: settings.notificationsEnabled !== false,
-    accentColor: typeof settings.accentColor === 'string' ? settings.accentColor : DEFAULT_SETTINGS.accentColor,
+    accentColor: typeof settings.accentColor === 'string' && HEX_COLOR_PATTERN.test(settings.accentColor)
+      ? settings.accentColor
+      : DEFAULT_SETTINGS.accentColor,
   };
 }
 

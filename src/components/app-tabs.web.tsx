@@ -9,6 +9,7 @@ import {
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function AppTabs() {
   return (
@@ -35,17 +36,19 @@ export default function AppTabs() {
 }
 
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+  const { colors } = useAppTheme();
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <Text style={[styles.tabButtonText, { opacity: isFocused ? 1 : 0.55 }]}>{children}</Text>
+      <Text style={[styles.tabButtonText, { color: colors.text, opacity: isFocused ? 1 : 0.55 }]}>{children}</Text>
     </Pressable>
   );
 }
 
 export function CustomTabList(props: TabListProps) {
+  const { colors } = useAppTheme();
   return (
     <View {...props} style={styles.tabListContainer}>
-      <View style={styles.innerContainer}>{props.children}</View>
+      <View style={[styles.innerContainer, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>{props.children}</View>
     </View>
   );
 }
@@ -68,6 +71,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: Spacing.two,
     maxWidth: MaxContentWidth,
+    borderWidth: 1,
   },
   brandText: {
     marginRight: 'auto',

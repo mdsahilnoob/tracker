@@ -7,6 +7,25 @@ function validSessions(sessions: FocusSession[]): FocusSession[] {
   });
 }
 
+function getSessionDateKeys(session: FocusSession, timeZone?: string): string[] {
+  const startMs = Date.parse(session.startedAt);
+  const endMs = Date.parse(session.endedAt);
+  const startKey = getDateKey(startMs, timeZone);
+  if (!startKey) return [];
+  if (!Number.isFinite(endMs) || endMs <= startMs) return [startKey];
+
+  const endKey = getDateKey(Math.max(startMs, endMs - 1), timeZone);
+  const keys = [startKey];
+  let cursor = startKey;
+  let guard = 0;
+  while (cursor && cursor !== endKey && guard < 3660) {
+    cursor = getDateKeyOffset(cursor, 1);
+    if (cursor) keys.push(cursor);
+    guard += 1;
+  }
+  return keys;
+}
+
 function sessionMinutesOnDate(session: FocusSession, dateKey: string, timeZone?: string): number {
   const actualMinutes = Math.max(0, session.actualDurationMinutes);
   const startMs = Date.parse(session.startedAt);
@@ -23,10 +42,22 @@ function sessionMinutesOnDate(session: FocusSession, dateKey: string, timeZone?:
   const step = 60_000;
   let minutes = 0;
   for (let cursor = startMs; cursor < endMs; cursor += step) {
-    const sliceEnd = Math.min(endMs, cursor + step);
-    if (getDateKey(cursor, timeZone) === dateKey) {
+    const currentKey = getDateKey(cursor, timeZone);
+    let sliceEnd = Math.min(endMs, cursor + step);
+    if (getDateKey(Math.max(cursor, sliceEnd - 1), timeZone) !== currentKey) {
+      let low = cursor + 1;
+      let high = sliceEnd;
+      while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        if (getDateKey(middle, timeZone) === currentKey) low = middle + 1;
+        else high = middle;
+      }
+      sliceEnd = low;
+    }
+    if (currentKey === dateKey) {
       minutes += actualMinutes * ((sliceEnd - cursor) / wallDuration);
     }
+    cursor = sliceEnd - step;
   }
   return minutes;
 }
@@ -101,11 +132,11 @@ export function getMonthlyStats(
 ): MonthlyStats {
   const monthKey = getDateKey(date, timeZone).slice(0, 7);
   const monthSessions = validSessions(sessions).filter((session) => {
-    return getDateKey(session.startedAt, timeZone).slice(0, 7) === monthKey;
+    return getSessionDateKeys(session, timeZone).some((dateKey) => dateKey.slice(0, 7) === monthKey);
   });
-  const dayKeys = new Set(monthSessions.map((session) => getDateKey(session.startedAt, timeZone)));
+  const dayKeys = new Set(monthSessions.flatMap((session) => getSessionDateKeys(session, timeZone)).filter((dateKey) => dateKey.slice(0, 7) === monthKey));
   return {
-    focusMinutes: monthSessions.reduce((total, session) => total + Math.max(0, session.actualDurationMinutes), 0),
+    focusMinutes: [...dayKeys].reduce((total, dateKey) => total + getFocusMinutesForDate(sessions, dateKey, timeZone), 0),
     sessionsCount: monthSessions.length,
     activeDays: dayKeys.size,
   };
@@ -135,6 +166,6 @@ export function getActiveDays(sessions: FocusSession[], timeZone?: string): Set<
   return new Set(
     validSessions(sessions)
       .filter((session) => session.actualDurationMinutes > 0)
-      .map((session) => getDateKey(session.startedAt, timeZone)),
+      .flatMap((session) => getSessionDateKeys(session, timeZone)),
   );
 }

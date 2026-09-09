@@ -65,10 +65,13 @@ export const useFocusStore = create<FocusStore>()((set, get) => ({
     const timer = get().activeTimer;
     if (!timer || timer.status !== 'paused' || !timer.pausedAt) return null;
     const nowMs = Date.now();
-    const pauseMs = Math.max(0, nowMs - Date.parse(timer.pausedAt));
+    const pausedAtMs = Date.parse(timer.pausedAt);
+    const expectedEndMs = Date.parse(timer.expectedEndAt);
+    if (!Number.isFinite(pausedAtMs) || !Number.isFinite(expectedEndMs)) return null;
+    const pauseMs = Math.max(0, nowMs - pausedAtMs);
     const resumedTimer: ActiveTimerState = {
       ...timer,
-      expectedEndAt: new Date(Date.parse(timer.expectedEndAt) + pauseMs).toISOString(),
+      expectedEndAt: new Date(expectedEndMs + pauseMs).toISOString(),
       accumulatedPausedMilliseconds: timer.accumulatedPausedMilliseconds + pauseMs,
       pausedAt: undefined,
       status: 'running',

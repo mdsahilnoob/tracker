@@ -23,7 +23,9 @@ export function getDateKey(value: Date | string | number, timeZone?: string): st
 
 export function getDateKeyOffset(dateKey: string, days: number): string {
   const [year, month, day] = dateKey.split('-').map(Number);
+  if (!DATE_KEY_PATTERN.test(dateKey) || !Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(days)) return '';
   const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '';
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
@@ -53,7 +55,7 @@ export function formatTime(value: string | Date): string {
 }
 
 export function formatDuration(minutes: number): string {
-  const safeMinutes = Math.max(0, Math.round(minutes));
+  const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
   const hours = Math.floor(safeMinutes / 60);
   const remainder = safeMinutes % 60;
   if (hours === 0) return `${remainder}m`;
@@ -62,7 +64,7 @@ export function formatDuration(minutes: number): string {
 }
 
 export function formatCountdown(totalSeconds: number): string {
-  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const safeSeconds = Number.isFinite(totalSeconds) ? Math.max(0, Math.floor(totalSeconds)) : 0;
   const minutes = Math.floor(safeSeconds / 60);
   const seconds = safeSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;

@@ -11,6 +11,7 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { getTodayStats } from '@/lib/analytics';
 import { formatCountdown, formatDuration } from '@/lib/dates';
+import { shouldCelebrateGoal } from '@/lib/goals';
 import { triggerHaptic } from '@/services/haptics';
 import { cancelFocusCompletion, scheduleFocusCompletion } from '@/services/notifications';
 import { useFocusStore } from '@/stores/use-focus-store';
@@ -35,7 +36,7 @@ export default function FocusScreen() {
   const [duration, setDuration] = useState(String(settings.defaultFocusMinutes));
   const [now, setNow] = useState(() => Date.now());
   const completionInFlight = useRef(false);
-  const previousGoalMinutes = useRef(0);
+  const previousGoalMinutes = useRef<number | null>(null);
   const today = getTodayStats(sessions, new Date(now), settings.dailyGoalMinutes);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId);
 
@@ -56,12 +57,19 @@ export default function FocusScreen() {
     }).finally(() => { completionInFlight.current = false; });
   }, [activeTimer, now, completeTimer, settings.hapticsEnabled]);
   useEffect(() => {
-    if (previousGoalMinutes.current < settings.dailyGoalMinutes && today.focusMinutes >= settings.dailyGoalMinutes && sessions.length > 0) {
+    if (shouldCelebrateGoal(previousGoalMinutes.current, today.focusMinutes, settings.dailyGoalMinutes) && sessions.length > 0) {
       Alert.alert('Daily goal reached', 'A quiet win. Keep the momentum going.');
       void triggerHaptic(settings.hapticsEnabled, 'success');
     }
     previousGoalMinutes.current = today.focusMinutes;
   }, [today.focusMinutes, settings.dailyGoalMinutes, settings.hapticsEnabled, sessions.length]);
+
+  useEffect(() => {
+    if (!taskParam) return;
+    // The URL is an external navigation input; syncing a changed task deep-link is intentional.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedTaskId(taskParam);
+  }, [taskParam]);
 
   const remainingSeconds = activeTimer ? Math.max(0, Math.ceil((Date.parse(activeTimer.expectedEndAt) - (activeTimer.status === 'paused' && activeTimer.pausedAt ? Date.parse(activeTimer.pausedAt) : now)) / 1000)) : 0;
   const progress = activeTimer ? Math.min(1, Math.max(0, 1 - remainingSeconds / (activeTimer.plannedDurationMinutes * 60))) : 0;
@@ -78,11 +86,29 @@ export default function FocusScreen() {
     void scheduleFocusCompletion(timer, settings.soundEnabled, settings.notificationsEnabled);
   }
 
+  async function pause() {
+    await cancelFocusCompletion();
+    await pauseTimer();
+    await triggerHaptic(settings.hapticsEnabled, 'light');
+  }
+
+  async function resume() {
+    await cancelFocusCompletion();
+    const resumed = await resumeTimer();
+    if (resumed) await scheduleFocusCompletion(resumed, settings.soundEnabled, settings.notificationsEnabled);
+    await triggerHaptic(settings.hapticsEnabled, 'light');
+  }
+
+  async function finish(recordInterrupted: boolean) {
+    await cancelFocusCompletion();
+    await finishTimer(recordInterrupted);
+  }
+
   function endSession() {
     Alert.alert('End this focus session?', 'You can save the time as an interrupted session or discard it.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => { void cancelFocusCompletion(); void finishTimer(false); } },
-      { text: 'End Session', onPress: () => { void cancelFocusCompletion(); void finishTimer(true); } },
+      { text: 'Discard', style: 'destructive', onPress: () => { void finish(false); } },
+      { text: 'End Session', onPress: () => { void finish(true); } },
     ]);
   }
 
@@ -95,7 +121,7 @@ export default function FocusScreen() {
           <Text style={[styles.activeTask, { color: colors.text }]} numberOfLines={2}>{activeTimer.taskTitle || 'Deep work'}</Text>
           <TimerRing time={formatCountdown(remainingSeconds)} progress={progress} status={activeTimer.status === 'paused' ? 'Paused' : 'In focus'} />
           <ProgressBar progress={progress} />
-          <View style={styles.timerActions}>{activeTimer.status === 'running' ? <Button onPress={() => { void cancelFocusCompletion(); void pauseTimer(); void triggerHaptic(settings.hapticsEnabled, 'light'); }} variant="secondary" style={styles.halfButton}>Pause</Button> : <Button onPress={async () => { const resumed = await resumeTimer(); if (resumed) void scheduleFocusCompletion(resumed, settings.soundEnabled, settings.notificationsEnabled); void triggerHaptic(settings.hapticsEnabled, 'light'); }} style={styles.halfButton}>Resume</Button>}<Button onPress={endSession} variant="ghost" style={styles.halfButton}>Stop</Button></View>
+          <View style={styles.timerActions}>{activeTimer.status === 'running' ? <Button onPress={() => { void pause(); }} variant="secondary" style={styles.halfButton}>Pause</Button> : <Button onPress={() => { void resume(); }} style={styles.halfButton}>Resume</Button>}<Button onPress={endSession} variant="ghost" style={styles.halfButton}>Stop</Button></View>
         </Card>
       ) : (
         <Card style={styles.startCard}>

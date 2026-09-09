@@ -15,10 +15,17 @@ function isFocusSession(value: unknown): value is FocusSession {
   const session = value as Partial<FocusSession>;
   return (
     typeof session.id === 'string' &&
+    session.id.trim().length > 0 &&
     typeof session.startedAt === 'string' &&
     typeof session.endedAt === 'string' &&
+    Number.isFinite(Date.parse(session.startedAt)) &&
+    Number.isFinite(Date.parse(session.endedAt)) &&
     typeof session.plannedDurationMinutes === 'number' &&
     typeof session.actualDurationMinutes === 'number' &&
+    Number.isFinite(session.plannedDurationMinutes) &&
+    Number.isFinite(session.actualDurationMinutes) &&
+    session.plannedDurationMinutes >= 1 &&
+    session.actualDurationMinutes >= 0 &&
     (session.status === 'completed' || session.status === 'interrupted')
   );
 }

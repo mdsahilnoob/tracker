@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  formatCountdown,
+  formatDuration,
   getDateKey,
   getDateKeyOffset,
 } from '../src/lib/dates.ts';
@@ -23,6 +25,7 @@ import {
   getRemainingSeconds,
   getTimerProgress,
 } from '../src/lib/timer.ts';
+import { shouldCelebrateGoal } from '../src/lib/goals.ts';
 import type { FocusSession } from '../src/types/models.ts';
 
 const baseNow = Date.parse('2026-09-09T10:00:00.000Z');
@@ -49,6 +52,13 @@ test('date helpers use local date keys and move across month boundaries', () => 
   assert.equal(getDateKey('2026-09-09T23:30:00.000Z', 'America/Los_Angeles'), '2026-09-09');
   assert.equal(getDateKeyOffset('2026-09-01', -1), '2026-08-31');
   assert.equal(getDateKeyOffset('2026-12-31', 1), '2027-01-01');
+});
+
+test('date and display helpers fail safely for invalid input', () => {
+  assert.equal(getDateKeyOffset('2026-02-30', 1), '');
+  assert.equal(getDateKeyOffset('2026-02-01', Number.NaN), '');
+  assert.equal(formatDuration(Number.NaN), '0m');
+  assert.equal(formatCountdown(Number.NaN), '00:00');
 });
 
 test('timestamp timer reports remaining time and progress without counting paused time', () => {
@@ -111,4 +121,35 @@ test('goal completion and streaks handle zero, current, and longest streaks', ()
   assert.equal(calculateCurrentStreak(sessions, 60, '2026-09-09', 'UTC'), 3);
   assert.equal(calculateLongestStreak(sessions, 60, 'UTC'), 3);
   assert.equal(calculateCurrentStreak([], 60, '2026-09-09', 'UTC'), 0);
+});
+
+test('analytics splits a session at a local midnight', () => {
+  const crossMidnight = session('midnight', '2026-09-09T23:59:30.000Z', 2);
+  const beforeMidnight = getFocusMinutesForDate([crossMidnight], '2026-09-09', 'UTC');
+  const afterMidnight = getFocusMinutesForDate([crossMidnight], '2026-09-10', 'UTC');
+  assert.ok(Math.abs(beforeMidnight - 0.5) < 0.001);
+  assert.ok(Math.abs(afterMidnight - 1.5) < 0.001);
+  const monthBoundary = session('month-boundary', '2026-08-31T23:59:30.000Z', 2);
+  const september = getMonthlyStats([monthBoundary], '2026-09-10', 'UTC');
+  assert.equal(september.activeDays, 1);
+  assert.ok(Math.abs(september.focusMinutes - 1.5) < 0.001);
+});
+
+test('timer helpers fail safely for malformed persisted timestamps', () => {
+  const timer = createActiveTimer({ nowMs: baseNow, plannedDurationMinutes: 25 });
+  assert.equal(getRemainingSeconds({ ...timer, expectedEndAt: 'not-a-date' }, baseNow), 0);
+  assert.equal(getTimerProgress({ ...timer, pausedAt: 'not-a-date', status: 'paused' }, baseNow), 0);
+  assert.equal(createActiveTimer({ nowMs: baseNow, plannedDurationMinutes: Number.NaN }).plannedDurationMinutes, 25);
+  assert.ok(Number.isFinite(Date.parse(createActiveTimer({ nowMs: Number.NaN, plannedDurationMinutes: 25 }).startedAt)));
+});
+
+test('goal celebration only fires when a session crosses the goal', () => {
+  assert.equal(shouldCelebrateGoal(null, 120, 120), false);
+  assert.equal(shouldCelebrateGoal(119, 120, 120), true);
+  assert.equal(shouldCelebrateGoal(120, 140, 120), false);
+});
+
+test('streaks include both local dates touched by a session', () => {
+  const crossMidnight = session('streak-midnight', '2026-08-31T23:30:00.000Z', 60);
+  assert.equal(calculateLongestStreak([crossMidnight], 30, 'UTC'), 2);
 });

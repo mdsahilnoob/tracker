@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -10,7 +10,7 @@ export function AppScreen({ children, scroll = true }: PropsWithChildren<{ scrol
   const insets = useSafeAreaInsets();
   const contentStyle = [styles.content, {
     paddingTop: Math.max(insets.top, Spacing.three),
-    paddingBottom: insets.bottom + BottomTabInset + Spacing.four,
+    paddingBottom: insets.bottom + (Platform.OS === 'web' ? 100 : BottomTabInset) + Spacing.four,
   }];
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>

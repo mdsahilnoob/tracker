@@ -1,6 +1,6 @@
 import type { FocusSession } from '../types/models.ts';
 import { getDateKey, getDateKeyOffset } from './dates.ts';
-import { getFocusMinutesForDate } from './analytics.ts';
+import { getActiveDays, getFocusMinutesForDate } from './analytics.ts';
 
 export function didMeetGoalOnDate(
   sessions: FocusSession[],
@@ -19,6 +19,7 @@ export function calculateCurrentStreak(
 ): number {
   if (goalMinutes <= 0) return 0;
   const todayKey = getDateKey(today, timeZone);
+  if (!todayKey) return 0;
   let cursor = didMeetGoalOnDate(sessions, todayKey, goalMinutes, timeZone)
     ? todayKey
     : getDateKeyOffset(todayKey, -1);
@@ -36,10 +37,7 @@ export function calculateLongestStreak(
   timeZone?: string,
 ): number {
   if (goalMinutes <= 0 || sessions.length === 0) return 0;
-  const dateKeys = sessions
-    .map((session) => getDateKey(session.startedAt, timeZone))
-    .filter(Boolean)
-    .sort();
+  const dateKeys = [...getActiveDays(sessions, timeZone)].sort();
   if (dateKeys.length === 0) return 0;
 
   let cursor = dateKeys[0];

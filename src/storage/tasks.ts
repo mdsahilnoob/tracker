@@ -15,8 +15,13 @@ function isFocusTask(value: unknown): value is FocusTask {
   const task = value as Partial<FocusTask>;
   return (
     typeof task.id === 'string' &&
+    task.id.trim().length > 0 &&
     typeof task.title === 'string' &&
+    task.title.trim().length > 0 &&
+    task.title.length <= 120 &&
     typeof task.createdAt === 'string' &&
+    Number.isFinite(Date.parse(task.createdAt)) &&
+    (task.completedAt === undefined || (typeof task.completedAt === 'string' && Number.isFinite(Date.parse(task.completedAt)))) &&
     typeof task.isCompleted === 'boolean'
   );
 }

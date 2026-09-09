@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 
 import AppTabs from '@/components/app-tabs';
-import { configureNotifications } from '@/services/notifications';
+import { cancelFocusCompletion, configureNotifications } from '@/services/notifications';
 import { useFocusStore } from '@/stores/use-focus-store';
 import { useSettingsStore } from '@/stores/use-settings-store';
 import { useTasksStore } from '@/stores/use-tasks-store';
@@ -20,10 +20,21 @@ export default function RootLayout() {
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
 
   useEffect(() => {
-    Promise.all([hydrateFocus(), hydrateTasks(), hydrateSettings(), configureNotifications()]).finally(() => {
+    let mounted = true;
+    async function bootstrap() {
+      await Promise.all([hydrateFocus(), hydrateTasks(), hydrateSettings(), configureNotifications()]);
+      const activeTimer = useFocusStore.getState().activeTimer;
+      if (!activeTimer || activeTimer.status !== 'running') await cancelFocusCompletion();
+      if (!mounted) return;
+      setReady(true);
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+    bootstrap().catch(() => {
+      if (!mounted) return;
       setReady(true);
       SplashScreen.hideAsync().catch(() => undefined);
     });
+    return () => { mounted = false; };
   }, [hydrateFocus, hydrateTasks, hydrateSettings]);
 
   if (!ready) return null;
