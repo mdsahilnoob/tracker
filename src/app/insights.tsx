@@ -1,23 +1,29 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppScreen } from '@/components/ui/app-screen';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/ui/icon';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { SectionHeader } from '@/components/ui/section-header';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { getLast7Days, getLongestSession, getMonthlyStats, getTodayStats } from '@/lib/analytics';
+import { getLast7Days, getLongestSession, getMonthlyStats, getMostProductiveWeekday, getProductivityTrend, getSessionCompletionRate, getTodayStats } from '@/lib/analytics';
+import { getAchievementDefinitions, getAchievementProgress } from '@/lib/achievements';
 import { formatDuration, formatTime, getDateKey, getDateLabel } from '@/lib/dates';
 import { calculateCurrentStreak, calculateLongestStreak, didMeetGoalOnDate } from '@/lib/streaks';
 import { useFocusStore } from '@/stores/use-focus-store';
+import { useAchievementStore } from '@/stores/use-achievement-store';
 import { useSettingsStore } from '@/stores/use-settings-store';
 
 export default function InsightsScreen() {
   const { colors, accent } = useAppTheme();
   const sessions = useFocusStore((state) => state.sessions);
   const settings = useSettingsStore((state) => state.settings);
+  const unlocks = useAchievementStore((state) => state.unlocks);
+  const hydrateAchievements = useAchievementStore((state) => state.hydrate);
+  const syncAchievements = useAchievementStore((state) => state.sync);
   const todayKey = getDateKey(new Date());
   const today = getTodayStats(sessions, todayKey, settings.dailyGoalMinutes);
   const week = getLast7Days(sessions, todayKey);
@@ -29,6 +35,13 @@ export default function InsightsScreen() {
   const weekActiveDays = week.filter((day) => day.minutes > 0).length;
   const average = weekActiveDays ? week.reduce((sum, day) => sum + day.minutes, 0) / weekActiveDays : 0;
   const chronological = useMemo(() => [...sessions].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt)), [sessions]);
+  const trend = getProductivityTrend(sessions, todayKey, 14);
+  const trendMax = Math.max(1, ...trend.map((point) => point.minutes));
+  const mostProductiveWeekday = getMostProductiveWeekday(sessions);
+  const completionRate = getSessionCompletionRate(sessions);
+
+  useEffect(() => { void hydrateAchievements(); }, [hydrateAchievements]);
+  useEffect(() => { void syncAchievements(sessions, settings.dailyGoalMinutes, todayKey); }, [sessions, settings.dailyGoalMinutes, syncAchievements, todayKey]);
 
   return <AppScreen>
     <View style={styles.header}><Text style={[styles.eyebrow, { color: accent }]}>STATUS</Text><Text style={[styles.title, { color: colors.text }]}>Insights</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>See how your focus is adding up.</Text></View>
@@ -39,8 +52,12 @@ export default function InsightsScreen() {
       <Card><View style={styles.chartHeader}><View><Text style={[styles.chartTitle, { color: colors.text }]}>Focus per day</Text><Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Last 7 days · average {formatDuration(average)}</Text></View><View style={[styles.periodPill, { backgroundColor: accent }]}><Text style={styles.periodText}>Last 7 days</Text></View></View><View style={styles.chart}>{week.map((day) => <View key={day.dateKey} style={styles.barColumn}><Text style={[styles.barValue, { color: colors.textSecondary }]}>{day.minutes ? Math.round(day.minutes) : ''}</Text><View style={[styles.barTrack, { backgroundColor: colors.backgroundSelected }]}><View style={[styles.bar, { height: `${Math.max(day.minutes ? 10 : 2, (day.minutes / maxWeek) * 100)}%`, backgroundColor: day.minutes ? accent : colors.muted }]} /></View><Text style={[styles.dayLabel, { color: colors.textSecondary }]}>{day.label.slice(0, 2)}</Text></View>)}</View><View style={styles.metrics}><Metric label="Total" value={formatDuration(week.reduce((sum, day) => sum + day.minutes, 0))} colors={colors} /><Metric label="Active days" value={String(weekActiveDays)} colors={colors} /><Metric label="Longest" value={longest ? formatDuration(longest.actualDurationMinutes) : '—'} colors={colors} /></View></Card>
       <SectionHeader title="This month" />
       <Card><View style={styles.metrics}><Metric label="Focus time" value={formatDuration(month.focusMinutes)} colors={colors} /><Metric label="Sessions" value={String(month.sessionsCount)} colors={colors} /><Metric label="Active days" value={String(month.activeDays)} colors={colors} /></View></Card>
+      <SectionHeader title="Momentum" />
+      <Card><View style={styles.metrics}><Metric label="14-day focus" value={formatDuration(trend.reduce((sum, point) => sum + point.minutes, 0))} colors={colors} /><Metric label="Completion" value={`${Math.round(completionRate * 100)}%`} colors={colors} /><Metric label="Best day" value={mostProductiveWeekday?.label ?? '—'} colors={colors} /></View><View style={styles.trend}><View style={styles.trendBars}>{trend.map((point, index) => <View key={point.dateKey} style={styles.trendColumn}><View style={[styles.trendTrack, { backgroundColor: colors.backgroundSelected }]}><View style={[styles.trendBar, { height: `${Math.max(point.minutes ? 8 : 2, (point.minutes / trendMax) * 100)}%`, backgroundColor: point.minutes ? accent : colors.muted }]} /></View>{index % 2 === 0 ? <Text style={[styles.trendLabel, { color: colors.textSecondary }]}>{point.label.slice(0, 1)}</Text> : null}</View>)}</View></View></Card>
       <SectionHeader title="Daily goal streak" />
       <Card><View style={styles.streakTop}><MetricBlock label="Current streak" value={`${currentStreak} day${currentStreak === 1 ? '' : 's'}`} colors={colors} /><MetricBlock label="Best streak" value={`${longestStreak} day${longestStreak === 1 ? '' : 's'}`} colors={colors} accent={accent} /></View><View style={styles.weekDots}>{week.map((day) => { const met = didMeetGoalOnDate(sessions, day.dateKey, settings.dailyGoalMinutes); return <View key={day.dateKey} style={styles.dotDay}><View style={[styles.goalDot, { backgroundColor: met ? accent : colors.backgroundSelected, borderColor: met ? accent : colors.border }]}><Icon name={{ ios: met ? 'checkmark' : 'minus', android: met ? 'check' : 'remove', web: met ? 'check' : 'remove' }} size={14} color={met ? '#FFFFFF' : colors.muted} /></View><Text style={[styles.dotLabel, { color: colors.textSecondary }]}>{day.label.slice(0, 1)}</Text></View>; })}</View></Card>
+      <SectionHeader title="Achievements" />
+      <Card><Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Small milestones for showing up consistently.</Text>{getAchievementDefinitions().map((definition) => { const progress = getAchievementProgress(definition.id, sessions, settings.dailyGoalMinutes, todayKey); const unlocked = unlocks.some((item) => item.id === definition.id) || progress.unlocked; return <View key={definition.id} style={[styles.achievementRow, { borderBottomColor: colors.border }]}><View style={[styles.achievementIcon, { backgroundColor: unlocked ? colors.accentSoft : colors.backgroundSelected }]}><Icon name={{ ios: unlocked ? 'star.fill' : 'star', android: unlocked ? 'star' : 'star_outline', web: unlocked ? 'star' : 'star_outline' }} size={17} color={unlocked ? accent : colors.muted} /></View><View style={styles.achievementCopy}><View style={styles.achievementTitleRow}><Text style={[styles.sessionTitle, { color: colors.text }]}>{definition.title}</Text><Text style={[styles.achievementStatus, { color: unlocked ? accent : colors.textSecondary }]}>{unlocked ? 'Unlocked' : `${Math.min(definition.target, Math.round(progress.current))}/${definition.target}`}</Text></View><Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>{definition.description}</Text>{!unlocked ? <ProgressBar progress={progress.current / definition.target} height={5} /> : null}</View></View>; })}</Card>
       <SectionHeader title="Session history" />
       {chronological.map((session, index) => <View key={session.id}>{index === 0 || getDateKey(session.startedAt) !== getDateKey(chronological[index - 1].startedAt) ? <Text style={[styles.historyDate, { color: colors.textSecondary }]}>{getDateLabel(getDateKey(session.startedAt), todayKey)}</Text> : null}<Pressable accessibilityRole="button" accessibilityLabel={`View session for ${session.taskTitle || 'Deep work'}`} onPress={() => router.push(`/session/${session.id}`)} style={[styles.sessionRow, { borderBottomColor: colors.border }]}><View style={[styles.sessionMark, { backgroundColor: session.status === 'completed' ? colors.accentSoft : colors.backgroundSelected }]}><Icon name={{ ios: 'timer', android: 'timer', web: 'timer' }} size={18} color={session.status === 'completed' ? accent : colors.textSecondary} /></View><View style={styles.sessionMain}><Text style={[styles.sessionTitle, { color: colors.text }]} numberOfLines={1}>{session.taskTitle || 'Deep work'}</Text><Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>{formatDuration(session.actualDurationMinutes)} · {formatTime(session.startedAt)} · {session.status}</Text></View><Icon name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={18} color={colors.textSecondary} /></Pressable></View>)}
     </>}
@@ -89,4 +106,15 @@ const styles = StyleSheet.create({
   sessionMain: { flex: 1 },
   sessionTitle: { fontSize: 16, fontWeight: '800', marginBottom: 4 },
   sessionMeta: { fontSize: 12 },
+  trend: { height: 110, marginTop: 24 },
+  trendBars: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3 },
+  trendColumn: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'flex-end' },
+  trendTrack: { width: '100%', maxWidth: 15, height: 82, borderRadius: 7, justifyContent: 'flex-end', overflow: 'hidden' },
+  trendBar: { width: '100%', borderRadius: 7 },
+  trendLabel: { fontSize: 10, marginTop: 7 },
+  achievementRow: { minHeight: 76, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  achievementIcon: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  achievementCopy: { flex: 1 },
+  achievementTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  achievementStatus: { fontSize: 11, fontWeight: '800' },
 });

@@ -169,3 +169,59 @@ export function getActiveDays(sessions: FocusSession[], timeZone?: string): Set<
       .flatMap((session) => getSessionDateKeys(session, timeZone)),
   );
 }
+
+export interface ProductivityTrendPoint {
+  dateKey: string;
+  label: string;
+  minutes: number;
+  sessions: number;
+}
+
+export function getProductivityTrend(
+  sessions: FocusSession[],
+  endDate: Date | string = new Date(),
+  days = 14,
+  timeZone?: string,
+): ProductivityTrendPoint[] {
+  const count = Number.isFinite(days) ? Math.max(1, Math.min(90, Math.floor(days))) : 14;
+  const endKey = getDateKey(endDate, timeZone);
+  return Array.from({ length: count }, (_, index) => {
+    const dateKey = getDateKeyOffset(endKey, index - count + 1);
+    return {
+      dateKey,
+      label: getWeekdayLabel(dateKey),
+      minutes: getFocusMinutesForDate(sessions, dateKey, timeZone),
+      sessions: validSessions(sessions).filter((session) => sessionBelongsToDate(session, dateKey, timeZone)).length,
+    };
+  });
+}
+
+export interface ProductiveWeekday {
+  weekday: number;
+  label: string;
+  minutes: number;
+}
+
+export function getMostProductiveWeekday(sessions: FocusSession[], timeZone?: string): ProductiveWeekday | undefined {
+  const totals = new Map<number, number>();
+  for (const dateKey of getActiveDays(sessions, timeZone)) {
+    const weekday = new Date(`${dateKey}T12:00:00.000Z`).getUTCDay();
+    totals.set(weekday, (totals.get(weekday) ?? 0) + getFocusMinutesForDate(sessions, dateKey, timeZone));
+  }
+  const winner = [...totals.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0];
+  if (!winner) return undefined;
+  const [weekday, minutes] = winner;
+  const referenceDate = new Date(Date.UTC(2026, 0, 4 + weekday));
+  return {
+    weekday,
+    label: new Intl.DateTimeFormat(undefined, { weekday: 'long', timeZone: 'UTC' }).format(referenceDate),
+    minutes,
+  };
+}
+
+export function getSessionCompletionRate(sessions: FocusSession[]): number {
+  const usable = validSessions(sessions);
+  if (usable.length === 0) return 0;
+  const completed = usable.filter((session) => session.status === 'completed').length;
+  return Math.round((completed / usable.length) * 1000) / 1000;
+}

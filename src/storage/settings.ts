@@ -9,6 +9,13 @@ export const DEFAULT_SETTINGS: UserSettings = {
   hapticsEnabled: true,
   notificationsEnabled: true,
   accentColor: '#FF7657',
+  timerMode: 'free',
+  pomodoroWorkMinutes: 25,
+  pomodoroShortBreakMinutes: 5,
+  pomodoroLongBreakMinutes: 15,
+  pomodoroCycles: 4,
+  remindersEnabled: true,
+  animationsEnabled: true,
 };
 
 const validThemes: ThemeMode[] = ['system', 'light', 'dark'];
@@ -30,6 +37,13 @@ export async function loadSettings(): Promise<UserSettings> {
     accentColor: typeof settings.accentColor === 'string' && HEX_COLOR_PATTERN.test(settings.accentColor)
       ? settings.accentColor
       : DEFAULT_SETTINGS.accentColor,
+    timerMode: settings.timerMode === 'pomodoro' ? 'pomodoro' : DEFAULT_SETTINGS.timerMode,
+    pomodoroWorkMinutes: validMinutes(settings.pomodoroWorkMinutes, DEFAULT_SETTINGS.pomodoroWorkMinutes ?? 25),
+    pomodoroShortBreakMinutes: validSmallMinutes(settings.pomodoroShortBreakMinutes, 5),
+    pomodoroLongBreakMinutes: validSmallMinutes(settings.pomodoroLongBreakMinutes, 15),
+    pomodoroCycles: validCycles(settings.pomodoroCycles, 4),
+    remindersEnabled: settings.remindersEnabled !== false,
+    animationsEnabled: settings.animationsEnabled !== false,
   };
 }
 
@@ -47,4 +61,12 @@ function validGoal(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 1440
     ? Math.round(value)
     : fallback;
+}
+
+function validSmallMinutes(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 60 ? Math.round(value) : fallback;
+}
+
+function validCycles(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 12 ? Math.round(value) : fallback;
 }

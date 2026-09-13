@@ -6,7 +6,7 @@ import {
   getFocusNotificationChannelId,
   shouldUseNativeNotifications,
 } from '@/lib/notifications';
-import type { ActiveTimerState } from '@/types/models';
+import type { ActiveTimerState, Reminder, ReminderOccurrence } from '@/types/models';
 import type * as Notifications from 'expo-notifications';
 
 type NotificationsModule = typeof Notifications;
@@ -109,4 +109,31 @@ export async function cancelFocusCompletion(notificationId: string | undefined):
   } catch {
     // A stale notification ID should not block timer cleanup.
   }
+}
+
+export async function scheduleReminderOccurrence(reminder: Reminder, occurrence: ReminderOccurrence): Promise<string | undefined> {
+  const notifications = await loadNotificationsModule();
+  if (!notifications || !(await requestNotificationPermission())) return undefined;
+  const date = new Date(`${occurrence.date}T${String(occurrence.hour).padStart(2, '0')}:${String(occurrence.minute).padStart(2, '0')}:00`);
+  if (!Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) return undefined;
+  try {
+    return await notifications.scheduleNotificationAsync({
+      content: {
+        title: 'FocusFlow reminder',
+        body: reminder.taskTitle ? `${reminder.title} · ${reminder.taskTitle}` : reminder.title,
+        data: { reminderId: reminder.id },
+        sound: 'default',
+      },
+      trigger: {
+        type: notifications.SchedulableTriggerInputTypes.DATE,
+        date,
+      },
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+export async function cancelNotificationIds(notificationIds: string[] | undefined): Promise<void> {
+  await Promise.all((notificationIds ?? []).map((notificationId) => cancelFocusCompletion(notificationId)));
 }

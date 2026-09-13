@@ -7,6 +7,7 @@ interface SettingsStore {
   settings: UserSettings;
   hydrated: boolean;
   hydrate: () => Promise<void>;
+  refresh: () => Promise<void>;
   updateSettings: (patch: Partial<UserSettings>) => Promise<void>;
   resetSettings: () => Promise<void>;
 }
@@ -16,6 +17,9 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
   hydrated: false,
   hydrate: async () => {
     if (get().hydrated) return;
+    set({ settings: await loadSettings(), hydrated: true });
+  },
+  refresh: async () => {
     set({ settings: await loadSettings(), hydrated: true });
   },
   updateSettings: async (patch) => {

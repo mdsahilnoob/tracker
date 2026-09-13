@@ -1,8 +1,9 @@
 import { router, usePathname } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { AnimatedPressable } from './animated-pressable';
 import { Icon, type AppIconName } from './icon';
 
 const tabs: { key: string; path: string; label: string; icon: AppIconName }[] = [
@@ -24,14 +25,14 @@ export function FloatingTabBar() {
       <View style={[styles.bar, { backgroundColor: colors.navBackground }]}>
         <NavButton tab={tabs[0]} active={activeKey === tabs[0].key} accent={accent} inactive={colors.navInactive} />
         <NavButton tab={tabs[1]} active={activeKey === tabs[1].key} accent={accent} inactive={colors.navInactive} />
-        <Pressable
+        <AnimatedPressable
           accessibilityRole="button"
           accessibilityLabel="Start a focus session"
           onPress={() => router.replace('/')}
-          style={({ pressed }) => [styles.centerButton, { borderColor: accent, opacity: pressed ? 0.72 : 1 }]}
+          style={[styles.centerButton, { borderColor: accent }]}
         >
           <Icon name={{ ios: 'plus', android: 'add', web: 'add' }} size={24} color={accent} label="Start a focus session" />
-        </Pressable>
+        </AnimatedPressable>
         <NavButton tab={tabs[2]} active={activeKey === tabs[2].key} accent={accent} inactive={colors.navInactive} />
         <NavButton tab={tabs[3]} active={activeKey === tabs[3].key} accent={accent} inactive={colors.navInactive} />
       </View>
@@ -41,15 +42,15 @@ export function FloatingTabBar() {
 
 function NavButton({ tab, active, accent, inactive }: { tab: (typeof tabs)[number]; active: boolean; accent: string; inactive: string }) {
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="tab"
       accessibilityLabel={tab.label}
       accessibilityState={{ selected: active }}
       onPress={() => router.replace(tab.path as never)}
-      style={({ pressed }) => [styles.navButton, { backgroundColor: active ? accent : 'transparent', opacity: pressed ? 0.72 : 1 }]}
+      style={[styles.navButton, { backgroundColor: active ? accent : 'transparent' }]}
     >
       <Icon name={tab.icon} size={21} color={active ? '#FFFFFF' : inactive} label={tab.label} />
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
