@@ -5,6 +5,10 @@ export interface FocusCompletionContent {
 
 export type FocusNotificationChannelId = 'focus-complete-sound' | 'focus-complete-silent';
 
+export function shouldUseNativeNotifications(platform: string, runningInExpoGo: boolean): boolean {
+  return platform !== 'web' && !runningInExpoGo;
+}
+
 export function buildFocusCompletionContent(taskTitle: string | undefined, minutes: number): FocusCompletionContent {
   const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
   const subject = taskTitle?.trim();

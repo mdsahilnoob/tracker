@@ -1,41 +1,53 @@
-import * as Notifications from 'expo-notifications';
+import { isRunningInExpoGo } from 'expo';
 import { Platform } from 'react-native';
 
 import {
   buildFocusCompletionContent,
   getFocusNotificationChannelId,
+  shouldUseNativeNotifications,
 } from '@/lib/notifications';
 import type { ActiveTimerState } from '@/types/models';
+import type * as Notifications from 'expo-notifications';
+
+type NotificationsModule = typeof Notifications;
 
 const SOUND_CHANNEL = getFocusNotificationChannelId(true);
 const SILENT_CHANNEL = getFocusNotificationChannelId(false);
 
 let notificationHandlerConfigured = false;
+let notificationsModulePromise: Promise<NotificationsModule | null> | null = null;
+
+async function loadNotificationsModule(): Promise<NotificationsModule | null> {
+  if (!shouldUseNativeNotifications(Platform.OS, isRunningInExpoGo())) return null;
+  notificationsModulePromise ??= import('expo-notifications').catch(() => null);
+  return notificationsModulePromise;
+}
 
 export async function prepareLocalNotifications(): Promise<void> {
-  if (Platform.OS === 'web') return;
-  if (!notificationHandlerConfigured) {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
-    });
-    notificationHandlerConfigured = true;
-  }
-  if (Platform.OS !== 'android') return;
+  const notifications = await loadNotificationsModule();
+  if (!notifications) return;
   try {
+    if (!notificationHandlerConfigured) {
+      notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+      notificationHandlerConfigured = true;
+    }
+    if (Platform.OS !== 'android') return;
     await Promise.all([
-      Notifications.setNotificationChannelAsync(SOUND_CHANNEL, {
+      notifications.setNotificationChannelAsync(SOUND_CHANNEL, {
         name: 'Focus complete with sound',
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: notifications.AndroidImportance.HIGH,
         sound: 'default',
       }),
-      Notifications.setNotificationChannelAsync(SILENT_CHANNEL, {
+      notifications.setNotificationChannelAsync(SILENT_CHANNEL, {
         name: 'Focus complete silently',
-        importance: Notifications.AndroidImportance.DEFAULT,
+        importance: notifications.AndroidImportance.DEFAULT,
         sound: null,
       }),
     ]);
@@ -45,15 +57,16 @@ export async function prepareLocalNotifications(): Promise<void> {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  const notifications = await loadNotificationsModule();
+  if (!notifications) return false;
   try {
     await prepareLocalNotifications();
-    const existing = await Notifications.getPermissionsAsync();
-    if (existing.status === Notifications.PermissionStatus.GRANTED) return true;
-    const requested = await Notifications.requestPermissionsAsync({
+    const existing = await notifications.getPermissionsAsync();
+    if (existing.status === notifications.PermissionStatus.GRANTED) return true;
+    const requested = await notifications.requestPermissionsAsync({
       ios: { allowAlert: true, allowBadge: false, allowSound: true },
     });
-    return requested.status === Notifications.PermissionStatus.GRANTED;
+    return requested.status === notifications.PermissionStatus.GRANTED;
   } catch {
     return false;
   }
@@ -63,21 +76,22 @@ export async function scheduleFocusCompletion(
   timer: ActiveTimerState,
   options: { soundEnabled: boolean },
 ): Promise<string | undefined> {
-  if (Platform.OS === 'web') return undefined;
+  const notifications = await loadNotificationsModule();
+  if (!notifications) return undefined;
   const endMs = Date.parse(timer.expectedEndAt);
   if (!Number.isFinite(endMs) || endMs <= Date.now()) return undefined;
   const permitted = await requestNotificationPermission();
   if (!permitted) return undefined;
 
   try {
-    return await Notifications.scheduleNotificationAsync({
+    return await notifications.scheduleNotificationAsync({
       content: {
         ...buildFocusCompletionContent(timer.taskTitle, timer.plannedDurationMinutes),
         data: { sessionId: timer.sessionId },
         sound: options.soundEnabled ? 'default' : undefined,
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        type: notifications.SchedulableTriggerInputTypes.DATE,
         date: new Date(endMs),
         channelId: getFocusNotificationChannelId(options.soundEnabled),
       },
@@ -88,9 +102,10 @@ export async function scheduleFocusCompletion(
 }
 
 export async function cancelFocusCompletion(notificationId: string | undefined): Promise<void> {
-  if (Platform.OS === 'web' || !notificationId) return;
+  const notifications = await loadNotificationsModule();
+  if (!notifications || !notificationId) return;
   try {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
+    await notifications.cancelScheduledNotificationAsync(notificationId);
   } catch {
     // A stale notification ID should not block timer cleanup.
   }

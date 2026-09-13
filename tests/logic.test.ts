@@ -29,6 +29,7 @@ import { shouldCelebrateGoal } from '../src/lib/goals.ts';
 import {
   buildFocusCompletionContent,
   getFocusNotificationChannelId,
+  shouldUseNativeNotifications,
 } from '../src/lib/notifications.ts';
 import type { FocusSession } from '../src/types/models.ts';
 
@@ -167,6 +168,13 @@ test('builds local completion copy with task snapshot and duration', () => {
 test('selects separate Android notification channels for sound preference', () => {
   assert.equal(getFocusNotificationChannelId(true), 'focus-complete-sound');
   assert.equal(getFocusNotificationChannelId(false), 'focus-complete-silent');
+});
+
+test('does not load native notifications inside Expo Go or on web', () => {
+  assert.equal(shouldUseNativeNotifications('android', true), false);
+  assert.equal(shouldUseNativeNotifications('android', false), true);
+  assert.equal(shouldUseNativeNotifications('ios', true), false);
+  assert.equal(shouldUseNativeNotifications('web', false), false);
 });
 
 test('streaks include both local dates touched by a session', () => {
