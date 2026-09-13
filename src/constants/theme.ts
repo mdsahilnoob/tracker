@@ -1,32 +1,33 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 import '@/global.css';
 
 import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#171717',
-    background: '#F7F7F5',
+    text: '#151412',
+    background: '#FFF8F4',
     backgroundElement: '#FFFFFF',
-    backgroundSelected: '#F0ECEA',
-    textSecondary: '#77736F',
-    border: '#E6E2DF',
-    muted: '#A39E99',
-    danger: '#C95148',
+    backgroundSelected: '#FFF0E7',
+    textSecondary: '#665E59',
+    border: '#F0E1D8',
+    muted: '#A39992',
+    danger: '#C84C39',
+    accentSoft: '#FFE2D3',
+    navBackground: '#171615',
+    navInactive: '#B7ADA7',
   },
   dark: {
-    text: '#F8F6F3',
-    background: '#171615',
-    backgroundElement: '#242220',
-    backgroundSelected: '#322A27',
-    textSecondary: '#AAA39D',
-    border: '#3A3632',
-    muted: '#756F69',
+    text: '#FFF8F3',
+    background: '#211A18',
+    backgroundElement: '#2D2421',
+    backgroundSelected: '#3A2A25',
+    textSecondary: '#C8B9B1',
+    border: '#4A3831',
+    muted: '#9C8980',
     danger: '#F07A6D',
+    accentSoft: '#4C2A20',
+    navBackground: '#0E0D0D',
+    navInactive: '#9B8C85',
   },
 } as const;
 
@@ -67,7 +68,7 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export const BottomTabInset = Platform.select({ ios: 92, android: 104, web: 96 }) ?? 104;
+export const MaxContentWidth = 720;
 
-export const AccentColors = ['#FF7657', '#D05B83', '#8170E8', '#4E8EDC', '#3EAB86', '#C69445'];
+export const AccentColors = ['#FF6B1A', '#E35D38', '#D65B83', '#7D70E8', '#438FCE', '#3BA478'];

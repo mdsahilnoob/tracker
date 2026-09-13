@@ -8,4 +8,4 @@ export function SectionHeader({ title, action }: { title: string; action?: React
   return <View style={styles.row}><Text style={[styles.title, { color: colors.text }]}>{title}</Text>{action}</View>;
 }
 
-const styles = StyleSheet.create({ row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.two }, title: { fontSize: 18, fontWeight: '800', letterSpacing: -0.2 } });
+const styles = StyleSheet.create({ row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.three, marginBottom: Spacing.two }, title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.45 } });

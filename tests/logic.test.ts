@@ -26,6 +26,10 @@ import {
   getTimerProgress,
 } from '../src/lib/timer.ts';
 import { shouldCelebrateGoal } from '../src/lib/goals.ts';
+import {
+  buildFocusCompletionContent,
+  getFocusNotificationChannelId,
+} from '../src/lib/notifications.ts';
 import type { FocusSession } from '../src/types/models.ts';
 
 const baseNow = Date.parse('2026-09-09T10:00:00.000Z');
@@ -147,6 +151,22 @@ test('goal celebration only fires when a session crosses the goal', () => {
   assert.equal(shouldCelebrateGoal(null, 120, 120), false);
   assert.equal(shouldCelebrateGoal(119, 120, 120), true);
   assert.equal(shouldCelebrateGoal(120, 140, 120), false);
+});
+
+test('builds local completion copy with task snapshot and duration', () => {
+  assert.deepEqual(buildFocusCompletionContent('Write tests', 25), {
+    title: 'Focus session complete',
+    body: '25 minutes on Write tests. Nice work.',
+  });
+  assert.deepEqual(buildFocusCompletionContent(undefined, 45), {
+    title: 'Focus session complete',
+    body: '45 minutes of focus complete. Nice work.',
+  });
+});
+
+test('selects separate Android notification channels for sound preference', () => {
+  assert.equal(getFocusNotificationChannelId(true), 'focus-complete-sound');
+  assert.equal(getFocusNotificationChannelId(false), 'focus-complete-silent');
 });
 
 test('streaks include both local dates touched by a session', () => {

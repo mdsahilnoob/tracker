@@ -14,6 +14,7 @@ export function AppScreen({ children, scroll = true }: PropsWithChildren<{ scrol
   }];
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <View pointerEvents="none" style={[styles.ambient, { backgroundColor: colors.accentSoft }]} />
       {scroll ? (
         <ScrollView
           style={styles.scroll}
@@ -30,8 +31,9 @@ export function AppScreen({ children, scroll = true }: PropsWithChildren<{ scrol
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, overflow: 'hidden' },
   scroll: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: Spacing.three },
   inner: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+  ambient: { position: 'absolute', width: 460, height: 340, borderRadius: 230, top: -190, right: -180, opacity: 0.62 },
 });

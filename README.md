@@ -27,4 +27,4 @@ Before publishing, replace the placeholder Android package ID `com.yourname.focu
 
 The app uses versioned AsyncStorage keys under `focusflow:v1:*`. The timer source of truth is persisted timestamps (`startedAt`, `expectedEndAt`, pause metadata); the one-second interval only refreshes the display.
 
-Notifications are temporarily disabled so the app runs cleanly in Expo Go on Android. Re-enable them in a development build when notification support is needed.
+Focus completion notifications are local-only. Permission is requested when a timer starts with notifications enabled; if permission is denied, the timer and in-app completion flow continue to work.

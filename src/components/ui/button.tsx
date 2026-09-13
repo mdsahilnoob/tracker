@@ -31,13 +31,13 @@ export function Button({
       accessibilityLabel={accessibilityLabel}
       disabled={disabled || loading}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, { backgroundColor, borderColor: colors.border, opacity: disabled ? 0.45 : pressed ? 0.75 : 1 }, style]}>
+      style={({ pressed }) => [styles.button, { backgroundColor, borderColor: variant === 'primary' || variant === 'danger' ? backgroundColor : colors.border, opacity: disabled ? 0.45 : pressed ? 0.78 : 1 }, style]}>
       {loading ? <ActivityIndicator color={foreground} /> : <Text style={[styles.label, { color: foreground }]}>{children}</Text>}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  button: { minHeight: 52, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three },
-  label: { fontSize: 16, fontWeight: '700' },
+  button: { minHeight: 50, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three },
+  label: { fontSize: 15, fontWeight: '800', letterSpacing: -0.1 },
 });

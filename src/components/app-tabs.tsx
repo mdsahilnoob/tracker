@@ -1,18 +1,15 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useAppTheme } from '@/hooks/use-app-theme';
+import { Slot } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+
+import { FloatingTabBar } from '@/components/ui/floating-tab-bar';
 
 export default function AppTabs() {
-  const { colors } = useAppTheme();
-
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index"><NativeTabs.Trigger.Label>Focus</NativeTabs.Trigger.Label></NativeTabs.Trigger>
-      <NativeTabs.Trigger name="tasks"><NativeTabs.Trigger.Label>Tasks</NativeTabs.Trigger.Label></NativeTabs.Trigger>
-      <NativeTabs.Trigger name="insights"><NativeTabs.Trigger.Label>Insights</NativeTabs.Trigger.Label></NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings"><NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label></NativeTabs.Trigger>
-    </NativeTabs>
+    <View style={styles.shell}>
+      <Slot />
+      <FloatingTabBar />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({ shell: { flex: 1 } });

@@ -1,14 +1,11 @@
 import type { PropsWithChildren } from 'react';
-import { StyleSheet, View } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
-import { useAppTheme } from '@/hooks/use-app-theme';
+import { Surface } from './surface';
 
-export function Card({ children, style }: PropsWithChildren<{ style?: object }>) {
-  const { colors } = useAppTheme();
-  return <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: colors.border }, style]}>{children}</View>;
+export function Card({ children, style, elevated = false }: PropsWithChildren<{ style?: StyleProp<ViewStyle>; elevated?: boolean }>) {
+  return <Surface style={[styles.card, style]} elevated={elevated}>{children}</Surface>;
 }
 
-const styles = StyleSheet.create({
-  card: { borderRadius: 24, borderWidth: 1, padding: Spacing.three },
-});
+const styles = StyleSheet.create({ card: { padding: 20 } });
