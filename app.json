@@ -11,7 +11,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "com.yourname.focusflow",
+      "package": "com.noobai.focusflow",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#171615",
@@ -43,6 +43,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d0bd865d-bf5e-43e0-8caa-68886f1a2a53"
+      }
     }
   }
 }
