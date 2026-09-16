@@ -45,9 +45,13 @@ import {
   getAchievementProgress,
 } from '../src/lib/achievements.ts';
 import { getMotionDuration } from '../src/lib/motion.ts';
+import { getKeyboardAvoidingBehavior } from '../src/lib/keyboard.ts';
 import { sanitizeTemplateTitle } from '../src/lib/templates.ts';
+import { CREATOR_NAME } from '../src/constants/branding.ts';
+import { AccentColors } from '../src/constants/accent-colors.ts';
 import {
   buildFocusCompletionContent,
+  getFocusNotificationChannelConfig,
   getFocusNotificationChannelId,
   shouldUseNativeNotifications,
 } from '../src/lib/notifications.ts';
@@ -190,6 +194,11 @@ test('selects separate Android notification channels for sound preference', () =
   assert.equal(getFocusNotificationChannelId(false), 'focus-complete-silent');
 });
 
+test('uses Android system sound without treating default as a custom channel sound', () => {
+  assert.deepEqual(getFocusNotificationChannelConfig(true), {});
+  assert.deepEqual(getFocusNotificationChannelConfig(false), { sound: null });
+});
+
 test('does not load native notifications inside Expo Go or on web', () => {
   assert.equal(shouldUseNativeNotifications('android', true), false);
   assert.equal(shouldUseNativeNotifications('android', false), true);
@@ -307,8 +316,21 @@ test('motion duration can be disabled for reduced motion', () => {
   assert.equal(getMotionDuration(240, true), 0);
 });
 
+test('field sheets use keyboard-aware behavior on each native platform', () => {
+  assert.equal(getKeyboardAvoidingBehavior('android'), 'height');
+  assert.equal(getKeyboardAvoidingBehavior('ios'), 'padding');
+});
+
 test('template titles are normalized for local storage', () => {
   assert.equal(sanitizeTemplateTitle('  Deep   work  '), 'Deep work');
   assert.equal(sanitizeTemplateTitle('   '), '');
   assert.equal(sanitizeTemplateTitle('x'.repeat(100)).length, 60);
+});
+
+test('about credits the creator by the requested name', () => {
+  assert.equal(CREATOR_NAME, 'Noob AI');
+});
+
+test('accent palette includes the expanded settings colors', () => {
+  assert.deepEqual(AccentColors.slice(-6), ['#D97706', '#B84A8B', '#5B5BD6', '#0F8B8D', '#D64545', '#4D7C0F']);
 });

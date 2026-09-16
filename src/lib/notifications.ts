@@ -23,3 +23,7 @@ export function buildFocusCompletionContent(taskTitle: string | undefined, minut
 export function getFocusNotificationChannelId(soundEnabled: boolean): FocusNotificationChannelId {
   return soundEnabled ? 'focus-complete-sound' : 'focus-complete-silent';
 }
+
+export function getFocusNotificationChannelConfig(soundEnabled: boolean): { sound?: null } {
+  return soundEnabled ? {} : { sound: null };
+}

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ReminderEditorSheet } from '@/components/reminders/reminder-editor-sheet';
 import { AppScreen } from '@/components/ui/app-screen';
@@ -10,6 +10,7 @@ import { FieldSheet } from '@/components/ui/field-sheet';
 import { Icon } from '@/components/ui/icon';
 import { SectionHeader } from '@/components/ui/section-header';
 import { AccentColors, Colors } from '@/constants/theme';
+import { CREATOR_NAME } from '@/constants/branding';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { exportBackup, importBackupFromPicker } from '@/services/backup';
 import { clearFocusData } from '@/storage';
@@ -117,7 +118,23 @@ export default function SettingsScreen() {
     <SectionHeader title="Data" />
     <Card><Text style={[styles.dataCount, { color: colors.text }]}>{sessionsCount} session{sessionsCount === 1 ? '' : 's'} stored locally</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>Your data never leaves this device.</Text><View style={styles.dataActions}><Button onPress={() => { void exportBackup('json'); }} variant="secondary" style={styles.dataButton}>Export JSON</Button><Button onPress={() => { void exportBackup('csv'); }} variant="secondary" style={styles.dataButton}>Export CSV</Button></View><Button onPress={() => { void handleImport(); }} variant="secondary" style={styles.dataButton}>Import backup</Button><Button onPress={deleteAll} variant="danger" style={styles.deleteButton}>Delete all focus data</Button></Card>
     <SectionHeader title="About" />
-    <Card><Text style={[styles.aboutName, { color: colors.text }]}>FocusFlow</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>Version {Constants.expoConfig?.version ?? '1.0.0'} · Offline by design</Text><Text style={[styles.privacy, { color: colors.textSecondary }]}>Your focus data stays on your device. FocusFlow does not require an account and does not upload your productivity data.</Text></Card>
+    <Card>
+      <View style={styles.aboutBrand}>
+        <Image accessibilityLabel="FocusFlow logo" source={require('../../assets/images/icon.png')} resizeMode="contain" style={styles.aboutLogo} />
+        <View style={styles.aboutCopy}>
+          <Text style={[styles.aboutName, { color: colors.text }]}>FocusFlow</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Version {Constants.expoConfig?.version ?? '1.0.0'} · Offline by design</Text>
+        </View>
+      </View>
+      <View style={[styles.creatorCredit, { borderTopColor: colors.border }]}>
+        <Image accessibilityLabel="Noob AI creator logo" source={require('../../assets/images/mdsahilnoob_logo.png')} resizeMode="cover" style={styles.creatorLogo} />
+        <View style={styles.creatorCopy}>
+          <Text style={[styles.creatorLabel, { color: colors.textSecondary }]}>Created by</Text>
+          <Text style={[styles.creatorName, { color: colors.text }]}>{CREATOR_NAME}</Text>
+        </View>
+      </View>
+      <Text style={[styles.privacy, { color: colors.textSecondary }]}>Your focus data stays on your device. FocusFlow does not require an account and does not upload your productivity data.</Text>
+    </Card>
     <FieldSheet visible={editor !== null} title={editor === 'focus' ? 'Focus minutes' : editor === 'pomodoroWork' ? 'Pomodoro work interval' : editor === 'goal' ? 'Daily focus goal' : editor === 'shortBreak' ? 'Short break' : editor === 'longBreak' ? 'Long break' : 'Pomodoro cycles'} value={editorValue} placeholder="Value" submitLabel="Save" helperText="This setting is stored locally." errorText={editorError} keyboardType="number-pad" onChangeText={(value) => { setEditorValue(value); setEditorError(''); }} onCancel={() => setEditor(null)} onSubmit={() => { void saveEditor(); }} />
     <ReminderEditorSheet key={reminderEditorVisible ? editingReminder?.id ?? 'new' : 'closed'} visible={reminderEditorVisible} reminder={editingReminder} colors={colors} accent={accent} onCancel={() => setReminderEditorVisible(false)} onSave={saveReminder} />
   </AppScreen>;
@@ -131,5 +148,5 @@ function formatReminderTime(hour: number, minute: number): string { const suffix
 function formatReminderDays(days: number[]): string { if (days.length === 7) return 'Every day'; if (days.length === 5 && days.every((day) => day > 0 && day < 6)) return 'Weekdays'; return days.map((day) => 'SMTWTFS'[day]).join(' '); }
 
 const styles = StyleSheet.create({
-  header: { marginBottom: 6 }, eyebrow: { fontSize: 11, fontWeight: '900', letterSpacing: 1.7 }, title: { fontSize: 34, fontWeight: '800', letterSpacing: -1.25, marginTop: 7 }, subtitle: { fontSize: 14, lineHeight: 20, marginTop: 6 }, row: { minHeight: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth }, rowLead: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }, rowLabel: { fontSize: 15, fontWeight: '700' }, rowValue: { flexDirection: 'row', alignItems: 'center', gap: 5 }, toggle: { width: 48, height: 28, borderRadius: 14, padding: 3, justifyContent: 'center' }, toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF' }, optionLabel: { fontSize: 13, fontWeight: '800' }, segmented: { flexDirection: 'row', gap: 8, marginTop: 10 }, segment: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 13 }, presetWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 12 }, preset: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 }, colors: { flexDirection: 'row', gap: 12, marginTop: 12 }, colorSwatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 3, alignItems: 'center', justifyContent: 'center' }, dataCount: { fontSize: 17, fontWeight: '800', marginBottom: 2 }, dataActions: { flexDirection: 'row', gap: 8, marginTop: 18 }, dataButton: { flex: 1, marginTop: 8 }, deleteButton: { marginTop: 18 }, aboutName: { fontSize: 20, fontWeight: '800' }, privacy: { fontSize: 14, lineHeight: 21, marginTop: 18 }, reminderRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, gap: 5 }, reminderCopy: { flex: 1 }, reminderMeta: { fontSize: 12, marginTop: 4 }, reminderButton: { marginTop: 16 }, iconHit: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
+  header: { marginBottom: 6 }, eyebrow: { fontSize: 11, fontWeight: '900', letterSpacing: 1.7 }, title: { fontSize: 34, fontWeight: '800', letterSpacing: -1.25, marginTop: 7 }, subtitle: { fontSize: 14, lineHeight: 20, marginTop: 6 }, row: { minHeight: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth }, rowLead: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }, rowLabel: { fontSize: 15, fontWeight: '700' }, rowValue: { flexDirection: 'row', alignItems: 'center', gap: 5 }, toggle: { width: 48, height: 28, borderRadius: 14, padding: 3, justifyContent: 'center' }, toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF' }, optionLabel: { fontSize: 13, fontWeight: '800' }, segmented: { flexDirection: 'row', gap: 8, marginTop: 10 }, segment: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 13 }, presetWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 12 }, preset: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 }, colors: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 }, colorSwatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 3, alignItems: 'center', justifyContent: 'center' }, dataCount: { fontSize: 17, fontWeight: '800', marginBottom: 2 }, dataActions: { flexDirection: 'row', gap: 8, marginTop: 18 }, dataButton: { flex: 1, marginTop: 8 }, deleteButton: { marginTop: 18 }, aboutBrand: { flexDirection: 'row', alignItems: 'center', gap: 14 }, aboutLogo: { width: 64, height: 64, borderRadius: 16 }, aboutCopy: { flex: 1 }, aboutName: { fontSize: 20, fontWeight: '800' }, creatorCredit: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, paddingTop: 18, borderTopWidth: StyleSheet.hairlineWidth }, creatorLogo: { width: 88, height: 60, borderRadius: 12 }, creatorCopy: { flex: 1 }, creatorLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }, creatorName: { fontSize: 18, fontWeight: '800', marginTop: 4 }, privacy: { fontSize: 14, lineHeight: 21, marginTop: 18 }, reminderRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, gap: 5 }, reminderCopy: { flex: 1 }, reminderMeta: { fontSize: 12, marginTop: 4 }, reminderButton: { marginTop: 16 }, iconHit: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

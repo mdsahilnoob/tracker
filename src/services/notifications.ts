@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 import {
   buildFocusCompletionContent,
+  getFocusNotificationChannelConfig,
   getFocusNotificationChannelId,
   shouldUseNativeNotifications,
 } from '@/lib/notifications';
@@ -43,12 +44,12 @@ export async function prepareLocalNotifications(): Promise<void> {
       notifications.setNotificationChannelAsync(SOUND_CHANNEL, {
         name: 'Focus complete with sound',
         importance: notifications.AndroidImportance.HIGH,
-        sound: 'default',
+        ...getFocusNotificationChannelConfig(true),
       }),
       notifications.setNotificationChannelAsync(SILENT_CHANNEL, {
         name: 'Focus complete silently',
         importance: notifications.AndroidImportance.DEFAULT,
-        sound: null,
+        ...getFocusNotificationChannelConfig(false),
       }),
     ]);
   } catch {

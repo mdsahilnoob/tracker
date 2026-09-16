@@ -2,6 +2,8 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+export { AccentColors } from './accent-colors';
+
 export const Colors = {
   light: {
     text: '#151412',
@@ -70,5 +72,3 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 92, android: 104, web: 96 }) ?? 104;
 export const MaxContentWidth = 720;
-
-export const AccentColors = ['#FF6B1A', '#E35D38', '#D65B83', '#7D70E8', '#438FCE', '#3BA478'];
